@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light;
+  --paper: #f4f2ec;
+  --surface: #fdfcf9;
+  --sidebar: #ebede4;
+  --ink: #202421;
+  --muted: #5d665f;
+  --line: #dfdfd4;
+  --soft-line: #ecece4;
+  --accent: #244d88;
+  --accent-soft: #e5edf8;
+  --green: #296649;
+  --surface-muted: #f1f2ec;
+  --panel-radius: 11px;
+  --control-radius: 7px;
+  --workspace-width: 1460px;
+  --workspace-gutter: clamp(16px, 2.6vw, 42px);
+  --workspace-bar-height: 56px;
+  --workspace-heading-height: 104px;
+  --workspace-gap: clamp(12px, 1.5vw, 20px);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--muted);
+  --color-border: var(--line);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #fff;
+  --color-secondary: var(--accent-soft);
+  --color-secondary-foreground: var(--accent);
+  --color-accent: var(--accent-soft);
+  --color-accent-foreground: var(--accent);
+  --color-ring: var(--accent);
+}
