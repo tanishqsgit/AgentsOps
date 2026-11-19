@@ -122,14 +122,17 @@ export function Settings({ employees, api, owner }: { employees: Employee[]; api
             employees={employees} pending={pending} api={api} save={save} />}
       </div>}
       {group === 'services' && <SettingPanel title="Python sandbox" status={settings.sandbox ? 'Configured' : 'Setup required'}>
-        <p className="muted">Connect E2B and grant Python sandbox to an employee in People. Each call uses a temporary environment.</p>
+        <p className="muted">Connect Modal and grant Python sandbox to an employee in People. Each call runs in a temporary environment with internet access disabled.</p>
+        {external('https://modal.com/settings/tokens', 'Create a Modal token')}
         <form className="inline-form" onSubmit={event => {
           event.preventDefault();
           const form = event.currentTarget;
-          save(() => api('/settings/sandbox', 'PUT', { apiKey: new FormData(form).get('apiKey') }), 'Sandbox settings saved.', form);
+          const data = new FormData(form);
+          save(() => api('/settings/sandbox', 'PUT', { tokenId: data.get('tokenId'), tokenSecret: data.get('tokenSecret') }), 'Modal settings saved.', form);
         }}>
-          <label>E2B API key<input name="apiKey" type="password" required autoComplete="new-password" /></label>
-          <Button disabled={pending}>Save sandbox provider</Button>
+          <label>Modal token ID<input name="tokenId" placeholder="ak-…" required autoComplete="off" /></label>
+          <label>Modal token secret<input name="tokenSecret" type="password" placeholder="as-…" required autoComplete="new-password" /></label>
+          <Button disabled={pending}>Save Modal credentials</Button>
           {settings.sandbox && <button type="button" disabled={pending}
             onClick={() => save(() => api('/settings/sandbox', 'PUT', null), 'Sandbox provider removed.')}>Disconnect</button>}
         </form>

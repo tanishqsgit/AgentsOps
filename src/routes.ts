@@ -10,7 +10,8 @@ import { apiConversation, ConversationBusyError, converse, history, streamConver
 import { releaseReview, reviewState } from './mastra/review.ts';
 import { telegram } from './mastra/telegram.ts';
 import { employeeToolIds } from './mastra/tools.ts';
-import { connectCatalog, credentials, discoverTools, integrationInventory } from './mastra/integrations.ts';
+import { connectCatalog, credentials, discoverTools, integrationInventory, modalSandboxCredentials } from './mastra/integrations.ts';
+import { modalCredentialsSchema } from './mastra/sandbox.ts';
 import { configuredModel, modelProviders, providerModelIds, verifyModel } from './mastra/models.ts';
 import { channelCatalog, channelConversation, channelInput, dispatchChannel, loadChannel, platformSchema, publicChannel, type Platform,
   registerDiscordCommand, registerTelegramWebhook, verifyChannel, webhookPath } from './mastra/company-channels.ts';
@@ -340,7 +341,10 @@ export const routes = [
         const { rows: [schema] } = await db.query(
           `select to_regclass('agentops.company_settings') is not null
            and to_regclass('agentops.knowledge_sources') is not null
-           and to_regclass('agentops.knowledge_chunks') is not null as ready`,
+           and to_regclass('agentops.knowledge_chunks') is not null
+           and (select count(*) from pg_attribute
+                where attrelid = to_regclass('agentops.company_settings') and not attisdropped
+                  and attname in ('sandbox_modal_token_id', 'sandbox_modal_token_secret')) = 2 as ready`,
         );
         if (!schema?.ready) return c.json({ status: 'unavailable' }, 503);
         return c.json({ status: 'ok' });
@@ -392,7 +396,7 @@ export const routes = [
     return c.json([
       { id: 'feedback-audit', name: 'Feedback audit', provider: 'agentops' },
       { id: knowledgeToolId, name: 'Search company knowledge', provider: 'agentops' },
-      ...(config.sandbox_api_key ? [{ id: 'python-sandbox', name: 'Python sandbox', provider: 'e2b' }] : []),
+      ...(modalSandboxCredentials(config) ? [{ id: 'python-sandbox', name: 'Python sandbox', provider: 'modal' }] : []),
       ...(config.search_provider ? [{ id: 'web-search', name: 'Web search', provider: config.search_provider }] : []),
       ...(config.search_provider === 'tinyfish' ? [{ id: 'fetch-web-page', name: 'Fetch web page', provider: 'tinyfish' }] : []),
       ...Object.entries(connectCatalog).filter(([id]) => Object.hasOwn(tools, id)).map(([id, definition]) => ({ id, ...definition }))]);
@@ -417,9 +421,11 @@ export const routes = [
   }),
   route(companyPath + '/settings/sandbox', 'PUT', async c => {
     const companyId = await ownedCompany(c);
-    const input = await readBody(c, z.object({ apiKey: z.string().trim().min(1).max(500) }).nullable());
-    await db.query(`insert into agentops.company_settings (company_id, sandbox_api_key) values ($1, $2)
-      on conflict (company_id) do update set sandbox_api_key = excluded.sandbox_api_key`, [companyId, input?.apiKey ?? null]);
+    const input = await readBody(c, modalCredentialsSchema.nullable());
+    await db.query(`insert into agentops.company_settings (company_id, sandbox_modal_token_id, sandbox_modal_token_secret)
+      values ($1, $2, $3) on conflict (company_id) do update set
+        sandbox_modal_token_id = excluded.sandbox_modal_token_id, sandbox_modal_token_secret = excluded.sandbox_modal_token_secret`,
+      [companyId, input?.tokenId ?? null, input?.tokenSecret ?? null]);
     return c.json({ saved: true });
   }),
   route(companyPath + '/settings/search', 'PUT', async c => {
@@ -447,7 +453,7 @@ export const routes = [
       },
       connect: { projectId: config.connect_project_id, configured: Boolean(config.connect_access_token) },
       search: config.search_provider,
-      sandbox: Boolean(config.sandbox_api_key),
+      sandbox: Boolean(modalSandboxCredentials(config)),
       channelCatalog: channelCatalog(),
       channels,
     });

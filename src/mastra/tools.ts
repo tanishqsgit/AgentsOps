@@ -2,7 +2,7 @@ import { sandboxTool } from './sandbox.ts';
 import { fetchPageTool, searchTool } from './search.ts';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-import { connectCatalog, discoverTools, credentials } from './integrations.ts';
+import { connectCatalog, discoverTools, credentials, modalSandboxCredentials } from './integrations.ts';
 import { configuredModel } from './models.ts';
 import { knowledgeToolId, retrieveKnowledge } from '../knowledge.ts';
 
@@ -60,7 +60,8 @@ export async function employeeRuntime(companyId: string, roster: { tool_ids: str
     ? await discoverTools(companyId, config) : {};
   const search = config.search_provider && config.search_api_key
     ? { 'web-search': searchTool(config.search_provider, config.search_api_key) } : {};
-  const sandbox = config.sandbox_api_key ? { 'python-sandbox': sandboxTool(config.sandbox_api_key) } : {};
+  const modal = modalSandboxCredentials(config);
+  const sandbox = modal ? { 'python-sandbox': sandboxTool(modal) } : {};
   const page = config.search_provider === 'tinyfish' && config.search_api_key
     ? { 'fetch-web-page': fetchPageTool(config.search_api_key) } : {};
   const knowledge = roster.some(person => person.tool_ids.includes(knowledgeToolId))

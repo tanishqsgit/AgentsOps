@@ -8,7 +8,8 @@
     "build": "mastra build",
     "start": "mastra start",
     "check": "tsc --noEmit",
-    "migrate": "node --env-file-if-exists=.env scripts/migrate.mjs"
+    "migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
+    "test:modal": "node --disable-warning=ExperimentalWarning scripts/test-modal-sandbox.mjs"
   },
   "dependencies": {
     "@chat-adapter/discord": "4.45.0",
@@ -19,12 +20,12 @@
     "@mastra/auth-supabase": "1.2.1",
     "@mastra/connect": "1.4.1",
     "@mastra/core": "1.85.0",
-    "@mastra/e2b": "0.18.0",
     "@mastra/memory": "1.41.2",
     "@mastra/observability": "1.24.2",
     "@mastra/pg": "1.37.0",
     "@mastra/rag": "2.8.1",
     "ai": "7.0.177",
+    "modal": "0.11.2",
     "pg": "8.23.1",
     "unpdf": "1.9.1",
     "zod": "4.6.7"

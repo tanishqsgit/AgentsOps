@@ -4,7 +4,8 @@ import { db } from '../db.ts';
 import type { SearchProvider } from './search.ts';
 
 type Credentials = {
-  sandbox_api_key: string | null;
+  sandbox_modal_token_id: string | null;
+  sandbox_modal_token_secret: string | null;
   search_provider: SearchProvider | null;
   search_api_key: string | null;
   mistral_api_key: string | null;
@@ -13,11 +14,18 @@ type Credentials = {
   connect_project_id: string | null;
   connect_access_token: string | null;
 };
-const empty: Credentials = { sandbox_api_key: null, search_provider: null, search_api_key: null, mistral_api_key: null, model_id: null, model_api_key: null, connect_project_id: null, connect_access_token: null };
+const empty: Credentials = { sandbox_modal_token_id: null, sandbox_modal_token_secret: null, search_provider: null, search_api_key: null, mistral_api_key: null, model_id: null, model_api_key: null, connect_project_id: null, connect_access_token: null };
+
+export function modalSandboxCredentials(config: Credentials) {
+  const { sandbox_modal_token_id: tokenId, sandbox_modal_token_secret: tokenSecret } = config;
+  return tokenId && tokenSecret ? { tokenId, tokenSecret } : null;
+}
 
 export async function credentials(companyId: string) {
   const { rows: [row] } = await db.query<Credentials>(
-    'select sandbox_api_key, search_provider, search_api_key, mistral_api_key, model_id, model_api_key, connect_project_id, connect_access_token from agentops.company_settings where company_id = $1',
+    `select sandbox_modal_token_id, sandbox_modal_token_secret, search_provider, search_api_key,
+       mistral_api_key, model_id, model_api_key, connect_project_id, connect_access_token
+     from agentops.company_settings where company_id = $1`,
     [companyId],
   );
   return row ?? empty;

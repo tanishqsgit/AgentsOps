@@ -244,11 +244,39 @@ Link the existing project from **Project settings → Repository → Link reposi
 
 Staging uses serverless compute. A one-time schedule has been verified to run an employee task while the service is awake. **Workflows → Schedules → History** shows dispatch and, once a task exists, its status and a link to its result. The headless history endpoint returns the same linked task ID and status. Before relying on unattended schedules or long-running work, verify execution across idle periods and redeploys on the intended hosting configuration. [Server idle behavior](https://mastra.ai/docs/mastra-platform/deploy/server#idle-behavior) · [Deployment behavior](https://mastra.ai/docs/mastra-platform/deploy/overview)
 
+## Deploy the web console on Render
+
+Create a **Web Service** from `vhp90/AgentsOps`. The console runs the Next.js server from `web/Dockerfile` and forwards authenticated API requests, streaming conversations, and knowledge uploads to AgentOps. [Render Docker](https://render.com/docs/docker)
+
+| Render setting | Value |
+| --- | --- |
+| Branch | `main` |
+| Runtime | Docker |
+| Root Directory | `web` |
+| Dockerfile Path | `./Dockerfile` |
+| Docker Build Context | `.` |
+| Health Check Path | `/healthz` |
+| Auto-Deploy | On Commit |
+
+Render resolves the Dockerfile and build context relative to the root directory. Git pushes affecting `web/` trigger a frontend deploy. Choose a region close to the API. Render's Starter instance keeps the console running. The Free instance spins down after 15 minutes without traffic. [Monorepo settings](https://render.com/docs/monorepo-support) · [Render plans](https://render.com/hosting/nextjs)
+
+Set these environment variables in the web service before deploying.
+
+| Variable | Value |
+| --- | --- |
+| `AGENTOPS_API_URL` | HTTPS origin of the deployed AgentOps API, with no path |
+| `SUPABASE_URL` | Auth project URL used by the API |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable key for that same Auth project |
+
+The console health check verifies that these variables are set. Check the API's `/healthz` separately, then open the frontend and sign in. Provider keys and the database connection belong on the backend.
+
 ## Web search, Python sandbox, and schedules
 
 In **Settings → Integrations**, save a Tavily, Brave Search, or TinyFish API key. Grant **Web search** to the intended employee in **People**. The tool returns public web results with source links. With TinyFish selected, grant **Fetch web page** separately to let an employee read public pages. Owners can also manage the workspace provider with `PUT /agentops/v1/companies/{companyId}/settings/search` and a body containing `provider` (`tavily`, `brave`, or `tinyfish`) and `apiKey`. Send JSON `null` to disconnect.
 
-Save an E2B API key in **Settings → Integrations**, or use `PUT /agentops/v1/companies/{companyId}/settings/sandbox` with an `apiKey`; JSON `null` disconnects it. Grant **Python sandbox** in **People**. Each call starts a fresh sandbox with outbound networking blocked, runs Python with a 20-second command timeout, and returns bounded stdout, stderr, and the exit code. The sandbox is destroyed after the call. [Mastra E2B integration](https://mastra.ai/integrations/sandboxes/e2b)
+Apply `db/013-modal-sandbox.sql` before deploying the Modal runtime. Save a [Modal token pair](https://modal.com/settings/tokens) in **Settings → Integrations → Python sandbox**, or send `{ "tokenId": "ak-…", "tokenSecret": "as-…" }` to `PUT /agentops/v1/companies/{companyId}/settings/sandbox` as the workspace owner. JSON `null` disconnects it. Grant **Python sandbox** in **People**. Existing grants work once Modal is configured. Each call starts a fresh sandbox with outbound networking blocked, runs Python with a 20-second command timeout, and returns bounded stdout, stderr, and the exit code. The service requests termination after each call and sets a 60-second sandbox lifetime.
+
+To run a live smoke test of the same tool without the web app, load `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` into your local process and run `npm run test:modal`. It checks Python output, process exit, and outbound network blocking. The runtime uses the Modal SDK inside a Mastra tool because `@mastra/modal` 0.7.4 does not expose Modal's creation-time network block. [Mastra Modal integration](https://mastra.ai/integrations/sandboxes/modal) · [Modal Sandbox SDK](https://modal.com/docs/sdk/js/latest/Sandbox)
 
 In **Workflows → Schedules**, choose an employee or a team with a lead, enter the task, then select a local date or a recurring cron expression with its time zone. Runs appear under Tasks, and scheduled release briefs go to human review. The service container runs the scheduler independently of the web app.
 
