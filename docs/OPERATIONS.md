@@ -232,6 +232,8 @@ npx mastra deploy --project <project-id> --env staging --env-file .env.mastra-de
 
 Check `/healthz`, a signed-in workspace request, and an agent conversation against the staging server before moving the console or any provider webhooks. Platform Studio sign-in authenticates operators. The AgentOps API uses its own user authentication. [Studio and server authentication](https://mastra.ai/docs/mastra-platform/deploy/studio#authentication)
 
+If the image builds but startup fails for `DATABASE_URL` (older builds report `ERR_INVALID_URL` with input `undefined`), check the exact environment named in the failed deployment. Attach its intended managed Neon or Postgres database, or set `DATABASE_URL` in that environment's variables to the URL of its existing hosted PostgreSQL database. Mastra injects managed connection URLs into the environments covered by the attachment. Apply any pending migrations to that database, redeploy the same environment, then verify `/health` and the database readiness check at `/healthz`. [Mastra system environment variables](https://mastra.ai/docs/mastra-platform/system-environment-variables)
+
 For the linked AgentOps project, run `./scripts/deploy-staging.ps1` in PowerShell to reuse the current Supabase Auth and Mistral settings from the local `.env`. The script stages those three settings in an ignored file, removes it after the deploy, and leaves database and observability credentials to Platform.
 
 To use the Docker console with a hosted service, set `AGENTOPS_WEB_API_URL` to its API origin in the terminal or the local Compose `.env`, then run `docker compose --profile web up -d --no-deps web`. Omit the setting to use the local service.
