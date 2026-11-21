@@ -77,3 +77,23 @@ For a [headless task example](docs/OPERATIONS.md#run-one-task-from-powershell), 
 Background executions are time-bounded. Review state persists in PostgreSQL, while an interrupted model call may require a new attempt. The operations guide covers hosting and schedule behavior, including server idle periods. [Mastra subagents](https://mastra.ai/docs/subagents) · [Workflow suspension and resumption](https://mastra.ai/docs/workflows/suspend-and-resume)
 
 [Project guide](AgentOps_Project_Guide.md) · [Implementation plan](AgentOps_Implementation_Plan.md)
+
+
+## Repository and system diagram
+
+This fork preserves the original project history. [Upstream project](https://github.com/vhp90/AgentsOps)
+
+```sh
+git clone https://github.com/tanishqsgit/AgentsOps.git
+cd AgentsOps
+```
+
+```mermaid
+flowchart LR
+    A[Next.js console or API client] -->|Supabase Auth session| C[AgentOps service and Mastra]
+    B[Linked messaging channels] -->|Verified sender| C
+    C --> D[Model and tool providers]
+    C --> E[PostgreSQL company and runtime data]
+```
+
+The standalone service handles authorization, dispatch, agent execution, and approval state. The optional web console consumes the same authenticated API. See the [operations guide](docs/OPERATIONS.md) for setup and a headless task walkthrough.
